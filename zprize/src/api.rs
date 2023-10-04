@@ -88,11 +88,12 @@ pub fn setup(
 /// Compile the circuit.
 pub fn compile(
     urs: &UniversalParams<Bls12_377>,
+    msg_len: usize,
 ) -> (
     CircuitProvingKey<Bls12_377, VarunaHidingMode>,
     CircuitVerifyingKey<Bls12_377>,
 ) {
-    let msg = console::sample_msg(5);
+    let msg = console::sample_msg(msg_len);
     let (public_key, signature) = console::sample_pubkey_sig(&msg);
     let circuit = run_circuit(public_key, signature, msg);
     VarunaInst::circuit_setup(&urs, &circuit).unwrap()

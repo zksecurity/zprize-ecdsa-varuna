@@ -61,7 +61,7 @@ mod tests {
 
         // setup
         let urs = api::setup(1000, 1000, 1000);
-        let (pk, vk) = api::compile(&urs);
+        let (pk, vk) = api::compile(&urs, msg_len);
 
         // prove and verify
         for tuple in tuples {

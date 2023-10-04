@@ -17,7 +17,6 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 fn criterion_benchmark(c: &mut Criterion) {
     // setup
     let urs = zprize::api::setup(1000, 1000, 1000);
-    let (pk, vk) = zprize::api::compile(&urs);
 
     // we generate 50 tuples for each bench
     // tuple = (public key, message, signature)
@@ -26,14 +25,17 @@ fn criterion_benchmark(c: &mut Criterion) {
     // 100 bytes
     let msg_len = 100;
     let small_tuples = zprize::console::generate_signatures(msg_len, num);
+    let (small_pk, small_vk) = zprize::api::compile(&urs, msg_len);
 
     // 1,000 bytes
     let msg_len = 1000;
     let medium_tuples = zprize::console::generate_signatures(msg_len, num);
+    let (medium_pk, medium_vk) = zprize::api::compile(&urs, msg_len);
 
     // 50,000 bytes
     let msg_len = 50000;
     let large_tuples = zprize::console::generate_signatures(msg_len, num);
+    let (large_pk, large_vk) = zprize::api::compile(&urs, msg_len);
 
     //
     // WARNING
@@ -48,7 +50,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             // prove all tuples
             for tuple in black_box(&small_tuples) {
-                zprize::prove_and_verify(&urs, &pk, &vk, black_box(tuple.clone()));
+                zprize::prove_and_verify(&urs, &small_pk, &small_vk, black_box(tuple.clone()));
             }
         })
     });
@@ -57,7 +59,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             // prove all tuples
             for tuple in black_box(&medium_tuples) {
-                zprize::prove_and_verify(&urs, &pk, &vk, black_box(tuple.clone()));
+                zprize::prove_and_verify(&urs, &medium_pk, &medium_vk, black_box(tuple.clone()));
             }
         })
     });
@@ -66,7 +68,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             // prove all tuples
             for tuple in black_box(&large_tuples) {
-                zprize::prove_and_verify(&urs, &pk, &vk, black_box(tuple.clone()));
+                zprize::prove_and_verify(&urs, &large_pk, &large_vk, black_box(tuple.clone()));
             }
         })
     });
