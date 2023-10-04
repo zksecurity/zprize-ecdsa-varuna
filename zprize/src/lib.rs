@@ -44,7 +44,10 @@ pub fn prove_and_verify(
 
     // Note: proof verification should take negligible time,
     // but feel free to move this outside of the benchmarking.
+    let now = std::time::Instant::now();
     api::verify_proof(urs, vk, public_key, msg, signature, &proof);
+    let elapsed = now.elapsed();
+    println!("verify: {:?}", elapsed);
 }
 
 #[cfg(test)]
@@ -56,7 +59,7 @@ mod tests {
         // generate `num` (pubkey, msg, signature)
         // with messages of length `msg_len`
         let num = 1;
-        let msg_len = 5;
+        let msg_len = 50000;
         let tuples = console::generate_signatures(msg_len, num);
 
         // setup
@@ -65,7 +68,10 @@ mod tests {
 
         // prove and verify
         for tuple in tuples {
+            let now = std::time::Instant::now();
             prove_and_verify(&urs, &pk, &vk, tuple);
+            let elapsed = now.elapsed();
+            println!("Time elapsed: {:?}", elapsed);
         }
     }
 }

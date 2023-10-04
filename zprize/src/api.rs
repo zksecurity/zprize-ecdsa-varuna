@@ -96,6 +96,10 @@ pub fn compile(
     let msg = console::sample_msg(msg_len);
     let (public_key, signature) = console::sample_pubkey_sig(&msg);
     let circuit = run_circuit(public_key, signature, msg);
+    println!("num constraints: {}", circuit.num_constraints());
+    println!("num public: {}", circuit.num_public());
+    println!("num private: {}", circuit.num_private());
+    println!("num non-zeros: {:?}", circuit.num_nonzeros());
     VarunaInst::circuit_setup(&urs, &circuit).unwrap()
 }
 
@@ -107,7 +111,7 @@ pub fn prove(
     msg: Vec<u8>,
     signature: console::ECDSASignature,
 ) -> varuna::Proof<Bls12_377> {
-    // run
+    // run circuit
     let circuit = run_circuit(public_key, signature, msg);
 
     // Prepare the instances.
@@ -117,10 +121,11 @@ pub fn prove(
 
     // Compute the proof.
     let rng = &mut OsRng::default();
-    // TODO: use the stuff from urs instead
     let universal_prover = urs.to_universal_prover().unwrap();
     let fiat_shamir = Network::varuna_fs_parameters();
-    VarunaInst::prove_batch(&universal_prover, fiat_shamir, &instances, rng).unwrap()
+
+    let res = VarunaInst::prove_batch(&universal_prover, fiat_shamir, &instances, rng).unwrap();
+    res
 }
 
 /// Verify a proof.
@@ -132,10 +137,9 @@ pub fn verify_proof(
     signature: console::ECDSASignature,
     proof: &varuna::Proof<Bls12_377>,
 ) {
-    // TODO: why are we doing this??
+    // Note: this is a hacky way of formatting public inputs,
+    // we shouldn't have to run the circuit to do that.
     let circuit = run_circuit(public_key, signature, msg);
-
-    // prepare input
     let mut inputs = vec![];
     for (_, input) in circuit.public_inputs() {
         inputs.push(*input);
@@ -145,7 +149,6 @@ pub fn verify_proof(
     // verify
     let mut keys_to_inputs = BTreeMap::new();
     keys_to_inputs.insert(vk, &vec_of_inputs[..]);
-    // TODO: use the stuff from urs instead
     let universal_verifier = urs.to_universal_verifier().unwrap();
     let fiat_shamir = Network::varuna_fs_parameters();
     VarunaInst::verify_batch(&universal_verifier, fiat_shamir, &keys_to_inputs, proof).unwrap();

@@ -15,6 +15,11 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn criterion_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Proof creation");
+    group
+        .sample_size(10)
+        .sampling_mode(criterion::SamplingMode::Flat); // for slow benchmarks
+
     // setup
     let urs = zprize::api::setup(1000, 1000, 1000);
 
@@ -46,7 +51,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     // as long as proofs verify.
     //
 
-    c.bench_function("small message", |b| {
+    group.bench_function("small message", |b| {
         b.iter(|| {
             // prove all tuples
             for tuple in black_box(&small_tuples) {
@@ -55,7 +60,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
-    c.bench_function("medium message", |b| {
+    group.bench_function("medium message", |b| {
         b.iter(|| {
             // prove all tuples
             for tuple in black_box(&medium_tuples) {
@@ -64,7 +69,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
-    c.bench_function("large message", |b| {
+    group.bench_function("large message", |b| {
         b.iter(|| {
             // prove all tuples
             for tuple in black_box(&large_tuples) {
