@@ -124,6 +124,7 @@ pub fn prove(
     let universal_prover = urs.to_universal_prover().unwrap();
     let fiat_shamir = Network::varuna_fs_parameters();
 
+    // Note: this could be optimized to prove several instances instead of just one ;)
     let res = VarunaInst::prove_batch(&universal_prover, fiat_shamir, &instances, rng).unwrap();
     res
 }
@@ -151,5 +152,7 @@ pub fn verify_proof(
     keys_to_inputs.insert(vk, &vec_of_inputs[..]);
     let universal_verifier = urs.to_universal_verifier().unwrap();
     let fiat_shamir = Network::varuna_fs_parameters();
+
+    // Note: same comment here, verify_batch could verify several proofs instead of one ;)
     VarunaInst::verify_batch(&universal_verifier, fiat_shamir, &keys_to_inputs, proof).unwrap();
 }
