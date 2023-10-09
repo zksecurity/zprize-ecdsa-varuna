@@ -24,30 +24,19 @@ pub mod circuit;
 pub mod console;
 
 /// A (public key, msg, signature) tuple.
-pub type Tuple = (VerifyingKey, Vec<u8>, Signature);
+pub type Tuples = Vec<(VerifyingKey, Vec<u8>, Signature)>;
 
 pub fn prove_and_verify(
     urs: &UniversalParams<Bls12_377>,
     pk: &CircuitProvingKey<Bls12_377, VarunaHidingMode>,
     vk: &CircuitVerifyingKey<Bls12_377>,
-    tuple: Tuple,
+    tuples: &Tuples,
 ) {
-    // Note: we use a naive encoding here,
-    // you can modify it as long as a verifier can still pass tuples `(public key, msg, signature)`.
-    let (public_key, msg, signature) = tuple.clone();
-    let public_key = console::ECDSAPublicKey { public_key };
-    let signature = console::ECDSASignature { signature };
-
-    // Note: here we prove a single signature at a time,
-    // but feel free to prove more of them in every proof.
-    let proof = api::prove(urs, pk, public_key.clone(), msg.clone(), signature.clone());
+    // TODO: test could be adjusted to pass references and clone less
+    let proof = api::prove(urs, pk, tuples.clone());
 
     // Note: proof verification should take negligible time,
-    // but feel free to move this outside of the benchmarking.
-    let now = std::time::Instant::now();
-    api::verify_proof(urs, vk, public_key, msg, signature, &proof);
-    let elapsed = now.elapsed();
-    println!("verify: {:?}", elapsed);
+    api::verify_proof(urs, vk, tuples, &proof);
 }
 
 #[cfg(test)]
@@ -67,11 +56,6 @@ mod tests {
         let (pk, vk) = api::compile(&urs, msg_len);
 
         // prove and verify
-        for tuple in tuples {
-            let now = std::time::Instant::now();
-            prove_and_verify(&urs, &pk, &vk, tuple);
-            let elapsed = now.elapsed();
-            println!("Time elapsed: {:?}", elapsed);
-        }
+        prove_and_verify(&urs, &pk, &vk, &tuples);
     }
 }
