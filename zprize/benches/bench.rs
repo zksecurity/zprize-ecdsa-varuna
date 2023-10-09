@@ -54,27 +54,21 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.bench_function("small message", |b| {
         b.iter(|| {
             // prove all tuples
-            for tuple in black_box(&small_tuples) {
-                zprize::prove_and_verify(&urs, &small_pk, &small_vk, black_box(tuple.clone()));
-            }
+            zprize::prove_and_verify(&urs, &small_pk, &small_vk, black_box(&small_tuples));
         })
     });
 
     group.bench_function("medium message", |b| {
         b.iter(|| {
             // prove all tuples
-            for tuple in black_box(&medium_tuples) {
-                zprize::prove_and_verify(&urs, &medium_pk, &medium_vk, black_box(tuple.clone()));
-            }
+            zprize::prove_and_verify(&urs, &medium_pk, &medium_vk, black_box(&medium_tuples));
         })
     });
 
     group.bench_function("large message", |b| {
         b.iter(|| {
             // prove all tuples
-            for tuple in black_box(&large_tuples) {
-                zprize::prove_and_verify(&urs, &large_pk, &large_vk, black_box(tuple.clone()));
-            }
+            zprize::prove_and_verify(&urs, &large_pk, &large_vk, black_box(&large_tuples));
         })
     });
 }

@@ -31,6 +31,7 @@ use std::collections::BTreeMap;
 
 use crate::circuit;
 use crate::console;
+use crate::Tuples;
 
 //
 // Aliases
@@ -107,51 +108,60 @@ pub fn compile(
 pub fn prove(
     urs: &UniversalParams<Bls12_377>,
     pk: &CircuitProvingKey<Bls12_377, VarunaHidingMode>,
-    public_key: console::ECDSAPublicKey,
-    msg: Vec<u8>,
-    signature: console::ECDSASignature,
+    tuples: Tuples,
 ) -> varuna::Proof<Bls12_377> {
-    // run circuit
-    let circuit = run_circuit(public_key, signature, msg);
-
     // Prepare the instances.
     let mut instances = BTreeMap::new();
-    let vec_of_circuits = vec![circuit];
-    instances.insert(pk, &vec_of_circuits[..]);
+    let mut assignments = Vec::with_capacity(tuples.len());
+    for tuple in tuples {
+        // Note: we use a naive encoding here,
+        // you can modify it as long as a verifier can still pass tuples `(public key, msg, signature)`.
+        let (public_key, msg, signature) = tuple;
+        let public_key = console::ECDSAPublicKey { public_key };
+        let signature = console::ECDSASignature { signature };
+        let assignment = run_circuit(public_key, signature, msg);
+        assignments.push(assignment);
+    }
+
+    instances.insert(pk, &assignments[..]);
 
     // Compute the proof.
     let rng = &mut OsRng::default();
     let universal_prover = urs.to_universal_prover().unwrap();
     let fiat_shamir = Network::varuna_fs_parameters();
-
-    // Note: this could be optimized to prove several instances instead of just one ;)
-    let res = VarunaInst::prove_batch(&universal_prover, fiat_shamir, &instances, rng).unwrap();
-    res
+    let proof = VarunaInst::prove_batch(&universal_prover, fiat_shamir, &instances, rng).unwrap();
+    proof
 }
 
 /// Verify a proof.
 pub fn verify_proof(
     urs: &UniversalParams<Bls12_377>,
     vk: &CircuitVerifyingKey<Bls12_377>,
-    public_key: console::ECDSAPublicKey,
-    msg: Vec<u8>,
-    signature: console::ECDSASignature,
+    tuples: &Tuples,
     proof: &varuna::Proof<Bls12_377>,
 ) {
     // Note: this is a hacky way of formatting public inputs,
     // we shouldn't have to run the circuit to do that.
-    let circuit = run_circuit(public_key, signature, msg);
-    let mut inputs = vec![];
-    for (_, input) in circuit.public_inputs() {
-        inputs.push(*input);
+    let mut inputs = Vec::with_capacity(tuples.len());
+    for tuple in tuples {
+        let (public_key, msg, signature) = tuple.clone();
+        let public_key = console::ECDSAPublicKey { public_key };
+        let signature = console::ECDSASignature { signature };
+        let assignment = run_circuit(public_key, signature, msg);
+
+        // prepare input
+        let mut inputs_i = vec![];
+        for (_, input) in assignment.public_inputs() {
+            inputs_i.push(*input);
+        }
+        inputs.push(inputs_i);
     }
-    let vec_of_inputs = vec![inputs];
 
     // verify
     let mut keys_to_inputs = BTreeMap::new();
-    keys_to_inputs.insert(vk, &vec_of_inputs[..]);
-    let universal_verifier = urs.to_universal_verifier().unwrap();
+    keys_to_inputs.insert(vk, &inputs[..]);
     let fiat_shamir = Network::varuna_fs_parameters();
+    let universal_verifier = urs.to_universal_verifier().unwrap();
 
     // Note: same comment here, verify_batch could verify several proofs instead of one ;)
     VarunaInst::verify_batch(&universal_verifier, fiat_shamir, &keys_to_inputs, proof).unwrap();
